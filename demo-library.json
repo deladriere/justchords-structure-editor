@@ -1,0 +1,64 @@
+{
+  "dataVersion": "00000000-0000-4000-8000-000000000000",
+  "songs": [
+    {
+      "id": "D0000001-0000-4000-8000-000000000001",
+      "title": "Morning Road",
+      "artist": "Demo Band",
+      "tempo": "100",
+      "timeSignature": "4/4",
+      "duration": "1:40",
+      "rawData": "Intro:\n[Am] [F] [C] [G]\n{chordbeats: 4 4 4 4}\n\nVerse 1:\n[Am]Gravel on the [F]early road\n[C]Coffee in a [G]paper cup\n[Am]Every mile a [F]little lighter\n[C]Till the sun comes [G]up\n{chordbeats: 4 4 4 4 4 4 4 4}\n\nChorus:\n[F]Drive, drive, [C]morning road\n[G]Take me where the [Am]rivers go\n[F]Drive, drive, [C]nothing owed\n[G]Only morning [G]road\n{chordbeats: 4 4 4 4 4 4 4 4}\n\nVerse 2:\n[Am]Radio is [F]half asleep\n[C]Humming every [G]song I know\n[Am]Windows down and [F]nothing urgent\n[C]Nowhere I must [G]go\n{chordbeats: 4 4 4 4 4 4 4 4}\n\nOutro:\n[Am] [F] [C] [G]\n[Am]\n{chordbeats: 4 4 4 4 8}",
+      "structure": [
+        { "type": "midi", "sectionName": "", "midiTrigger": "songAppear", "midiRef": "D1000001-0000-4000-8000-000000000001" },
+        { "type": "midi", "sectionName": "", "midiTrigger": "songAppear", "midiRef": "D1000002-0000-4000-8000-000000000002" },
+        { "type": "midi", "sectionName": "", "midiRef": "D1000003-0000-4000-8000-000000000003" },
+        { "type": "section", "sectionName": "Intro" },
+        { "type": "midi", "sectionName": "", "midiTrigger": "sectionDeselect", "midiDelay": 1, "midiRef": "D1000004-0000-4000-8000-000000000004" },
+        { "type": "section", "sectionName": "Verse 1" },
+        { "type": "midi", "sectionName": "", "midiTrigger": "sectionDeselect", "midiDelay": 1, "midiRef": "D1000005-0000-4000-8000-000000000005" },
+        { "type": "section", "sectionName": "Chorus" },
+        { "type": "midi", "sectionName": "", "midiTrigger": "sectionDeselect", "midiDelay": 1, "midiRef": "D1000004-0000-4000-8000-000000000004" },
+        { "type": "section", "sectionName": "Verse 2" },
+        { "type": "midi", "sectionName": "", "midiTrigger": "sectionDeselect", "midiDelay": 1, "midiRef": "D1000005-0000-4000-8000-000000000005" },
+        { "type": "section", "sectionName": "Chorus" },
+        { "type": "midi", "sectionName": "", "midiDelay": 2, "midiRef": "D1000006-0000-4000-8000-000000000006" },
+        { "type": "section", "sectionName": "Outro" }
+      ]
+    },
+    {
+      "id": "D0000002-0000-4000-8000-000000000002",
+      "title": "Paper Boats",
+      "artist": "Demo Band",
+      "tempo": "118",
+      "timeSignature": "4/4",
+      "duration": "1:30",
+      "rawData": "Verse 1:\n[C]Folding paper [G]in the rain\n[Am]Writing names on [F]every sail\n[C]Send them down the [G]gutter stream\n[F]Watch them chase the [G]trail\n{chordbeats: 4 4 4 4 4 4 4 4}\n\nChorus:\n[F]Paper boats, [C]paper boats\n[G]Carry what I [Am]couldn't say\n[F]Paper boats, [G]float away\n{chordbeats: 4 4 4 4 4 4}\n\nVerse 2:\n[C]One went under [G]by the bridge\n[Am]One got tangled [F]in the weeds\n[C]One kept going [G]round the bend\n[F]Further than it [G]needs\n{chordbeats: 4 4 4 4 4 4 4 4}\n\nChorus:\n[F]Paper boats, [C]paper boats\n[G]Carry what I [Am]couldn't say\n[F]Paper boats, [G]float away, [C]float away\n{chordbeats: 4 4 4 4 4 4 8}"
+    },
+    {
+      "id": "D0000003-0000-4000-8000-000000000003",
+      "title": "Slow Tide",
+      "artist": "Demo Band",
+      "tempo": "84",
+      "timeSignature": "3/4",
+      "duration": "1:20",
+      "rawData": "Verse:\n[D]Low tide, the [Bm]harbour sleeps\n[G]Nets on the [A]wall\n[D]Gulls in a [Bm]lazy line\n[G]Waiting for [A]all\n{chordbeats: 3 3 3 3 3 3 3 3}\n\nBridge:\n[G]Turn, turn, [A]water returns\n[Bm]Slow as a [G]breath\n{chordbeats: 3 3 3 3}\n\nEnd:\n[D]\n{chordbeats: 6}",
+      "structure": [
+        { "type": "midi", "sectionName": "", "midiTrigger": "songAppear", "midiRef": "D1000007-0000-4000-8000-000000000007" },
+        { "type": "section", "sectionName": "Verse" },
+        { "type": "section", "sectionName": "Bridge" },
+        { "type": "section", "sectionName": "Verse" },
+        { "type": "section", "sectionName": "End" }
+      ]
+    }
+  ],
+  "midiLibraryMessages": [
+    { "id": "D1000001-0000-4000-8000-000000000001", "name": "Patch 05 · Warm Pad", "midi": [{ "status": 192, "channel": 0, "data1": 4, "data2": 0 }] },
+    { "id": "D1000002-0000-4000-8000-000000000002", "name": "Bass Root 1/8", "midi": [{ "status": 176, "channel": 1, "data1": 17, "data2": 4 }] },
+    { "id": "D1000003-0000-4000-8000-000000000003", "name": "Pico Drum · Morning Road · Intro / PC 0", "midi": [{ "status": 192, "channel": 9, "data1": 0, "data2": 0 }] },
+    { "id": "D1000004-0000-4000-8000-000000000004", "name": "Pico Drum · Morning Road · Verse / PC 1", "midi": [{ "status": 192, "channel": 9, "data1": 1, "data2": 0 }] },
+    { "id": "D1000005-0000-4000-8000-000000000005", "name": "Pico Drum · Morning Road · Chorus / PC 2", "midi": [{ "status": 192, "channel": 9, "data1": 2, "data2": 0 }] },
+    { "id": "D1000006-0000-4000-8000-000000000006", "name": "Pico Drum · Morning Road · Outro fill / PC 3", "midi": [{ "status": 192, "channel": 9, "data1": 3, "data2": 0 }] },
+    { "id": "D1000007-0000-4000-8000-000000000007", "name": "Patch 12 · Nylon Guitar", "midi": [{ "status": 192, "channel": 0, "data1": 11, "data2": 0 }] }
+  ]
+}

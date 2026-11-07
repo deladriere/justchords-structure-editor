@@ -1,0 +1,10 @@
+.DS_Store
+.vscode/
+.env
+.env.*
+library*.json
+sample-library.json
+tools/
+screenshots/
+backups/
+_site/

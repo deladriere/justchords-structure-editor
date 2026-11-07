@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>JustChords Structure & MIDI Editor v1.0 · Independent utility</title>
+  <meta name="application-version" content="1.0">
+  <meta name="description" content="Independent utility for arranging JustChords song sections and MIDI events, with chords and lyrics. Imported JSON files stay on your device; download an edited copy.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230a8fd0'/%3E%3Ctext x='8' y='24' font-size='24' fill='white'%3E♪%3C/text%3E%3C/svg%3E">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark">♪</span>
+      <div>
+        <div class="brand-title">Structure &amp; MIDI <span class="badge badge-version" aria-label="Version 1.0">v1.0</span></div>
+        <div class="brand-sub">Independent utility for JustChords</div>
+      </div>
+    </div>
+
+    <div class="song-picker">
+      <select id="songSelect" aria-label="Song"></select>
+      <div id="songMeta" class="song-meta"></div>
+    </div>
+
+    <div class="toolbar">
+      <span id="dirtyBadge" class="badge badge-dirty" hidden>Modified</span>
+      <button id="revertBtn" class="btn btn-ghost" hidden>Revert</button>
+      <label class="zoom" title="Zoom (pixels per beat)">
+        <span>Zoom</span>
+        <input id="zoom" type="range" min="4" max="18" step="1" value="8">
+      </label>
+      <label class="btn btn-ghost file-btn">
+        Open library.json…
+        <input id="fileInput" type="file" accept=".json,application/json" hidden>
+      </label>
+      <button id="downloadBtn" class="btn btn-primary" disabled>Download edited copy</button>
+    </div>
+  </header>
+
+  <div class="transport">
+    <button id="displayBtn" class="btn" title="Do what JustChords does when you open this song: send its Song Appear presets">Display song</button>
+    <span id="displayState" class="state-pill">Song not displayed</span>
+    <button id="playBtn" class="btn btn-round" title="Play the timeline at song tempo (Space). Displays the song first if needed.">▶</button>
+    <span class="sep"></span>
+    <label class="field">MIDI out
+      <select id="midiOut"></select>
+    </label>
+    <label class="field check"><input id="chordsOn" type="checkbox"> Chords on ch 1</label>
+    <label class="field">vel <input id="velocity" type="number" min="1" max="127"></label>
+    <label class="field check" title="24 pulses per beat at song tempo, Start on play, Stop on stop"><input id="clockOn" type="checkbox"> MIDI clock</label>
+    <label class="field" title="Start the clock this many bars before the song, so a device can count in">Count-in
+      <select id="countIn">
+        <option value="0">none</option>
+        <option value="1">1 bar</option>
+        <option value="2">2 bars</option>
+      </select>
+    </label>
+    <button id="panicBtn" class="btn btn-ghost btn-danger" title="All Notes Off (CC123) on all 16 channels">Panic</button>
+    <span id="midiStatus" class="midi-status"></span>
+  </div>
+
+  <main class="layout">
+    <section class="left" id="leftPane">
+      <div class="palette">
+        <div class="palette-label">
+          <span>Sections in chart <span class="hint">click to append · drag onto the timeline to insert</span></span>
+          <button id="buildBtn" class="btn btn-small" title="Number duplicate section names in the song text, then add every section in text order">Build structure from song</button>
+        </div>
+        <div id="sectionPalette" class="palette-chips"></div>
+      </div>
+
+      <div class="legend">
+        <div><span class="kind load">PRE</span> <b>Song displayed</b>: when you open the song in JustChords</div>
+        <div><span class="kind select">IN</span> <b>Section selection (+delay)</b>: when that part starts</div>
+        <div><span class="kind deselect">OUT</span> <b>Section deselection (−anticipation)</b>: just before that part ends</div>
+        <div class="hint-line">While stopped, click a section name to simulate tapping it in JustChords: the previously tapped section's deselection presets go first, then this section's selection presets. Delays are ignored, because they only apply with Chord Beats Sync.</div>
+      </div>
+
+      <div id="loadZone" class="load-zone">
+        <div class="load-zone-label">
+          <span class="pre">PRE</span> When song is displayed
+          <span class="hint">drop here for Song Appear</span>
+        </div>
+        <div id="loadChips" class="chips-row"></div>
+      </div>
+
+      <div id="saveStatus" class="notice" hidden></div>
+      <div id="notice" class="notice" hidden></div>
+
+      <div class="track-head">
+        <span class="col-ruler">Bar</span>
+        <span class="col-block">Section · Chords · Lyrics</span>
+        <span class="col-lane">MIDI events · drop a preset at the moment it should fire</span>
+      </div>
+      <div id="track" class="track"></div>
+      <div id="endZone" class="end-zone">End of song</div>
+      <div id="midiLog" class="midi-log" role="log" aria-label="MIDI log" aria-live="off" hidden></div>
+    </section>
+
+    <aside class="right">
+      <div id="inspector" class="inspector" hidden></div>
+
+      <div class="library">
+        <div class="library-head">
+          <div class="library-heading">
+            <div class="library-title">MIDI Library</div>
+            <button id="newPresetBtn" class="btn btn-small" disabled>+ New preset</button>
+          </div>
+          <input id="search" type="search" placeholder="Search presets…" aria-label="Search presets">
+        </div>
+        <div id="libraryList" class="library-list"></div>
+      </div>
+      <footer class="about">
+        <p>Independent utility. Not affiliated with, endorsed by, or maintained by JustChords.</p>
+        <p>Imported JSON files are read-only. Download creates a separate edited copy. Your library stays on your device.</p>
+        <nav aria-label="About this utility">
+          <a href="https://github.com/deladriere/justchords-structure-editor" target="_blank" rel="noopener noreferrer">Source code</a>
+          <a href="https://github.com/deladriere/justchords-structure-editor/blob/main/LICENSE" target="_blank" rel="noopener noreferrer">MIT license</a>
+          <a href="https://wiki.justchords.app/index.php?title=MIDI" target="_blank" rel="noopener noreferrer">JustChords wiki</a>
+        </nav>
+      </footer>
+    </aside>
+  </main>
+
+
+  <dialog id="presetDialog" class="preset-dialog" aria-labelledby="presetDialogTitle" aria-describedby="presetHelp">
+    <form id="presetForm">
+      <h2 id="presetDialogTitle">New MIDI preset</h2>
+      <p id="presetHelp">Create a reusable preset, then drag it from the library onto the timeline.</p>
+      <label class="preset-name-field" for="presetName">Preset name</label>
+      <input id="presetName" name="presetName" required maxlength="200" placeholder="e.g. Patch · Warm Pad">
+      <div class="message-heading"><h3>Messages</h3><button id="addMessageBtn" type="button" class="btn btn-small">+ Add message</button></div>
+      <p class="preset-help">Messages send in order. Channels: 1–16. All other values: 0–127. Program 0 selects the first program. For bank select, add CC 0 and/or CC 32 before the program change.</p>
+      <div id="presetMessages" class="preset-messages"></div>
+      <p id="presetError" class="preset-error" role="alert" hidden></p>
+      <p class="preset-help">Use Download edited copy to save your presets with the library. Reloading discards edits.</p>
+      <div class="preset-actions"><button id="cancelPresetBtn" type="button" class="btn">Cancel</button><button type="submit" class="btn btn-primary">Save preset</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="sectionDialog" class="preset-dialog section-dialog" aria-labelledby="sectionDialogTitle" aria-describedby="sectionHelp">
+    <form id="sectionForm">
+      <h2 id="sectionDialogTitle">Edit section</h2>
+      <p id="sectionHelp">Edit this section’s text, chords and directives. Add a line such as <code>{chordbeats: 4 4 4 4}</code> after the chords, before the blank line ending the section.</p>
+      <label class="preset-name-field" for="sectionText">Section content</label>
+      <textarea id="sectionText" rows="12" spellcheck="false" aria-describedby="sectionTiming sectionError"></textarea>
+      <p id="sectionTiming" class="preset-help" aria-live="polite"></p>
+      <p id="sectionError" class="preset-error" role="alert" hidden></p>
+      <p class="preset-help">The edit applies to every occurrence of this named section in the arrangement. Download an edited copy to keep your changes.</p>
+      <div class="preset-actions"><button id="cancelSectionBtn" type="button" class="btn">Cancel</button><button type="submit" class="btn btn-primary">Save section</button></div>
+    </form>
+  </dialog>
+
+  <script src="app.js"></script>
+</body>
+</html>
