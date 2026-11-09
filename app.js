@@ -570,7 +570,70 @@ function updateSectionTiming() {
   else if (!values.length) summary += ' · no chord beats assigned';
   else if (values.length !== chords) summary += ` · ${values.length} beat values for ${chords} chords; ${values.length > chords ? 'extra values are unused' : 'remaining chords have 0 beats'}`;
   $('sectionTiming').textContent = summary;
+  $('defaultBeatsHelp').hidden = !section?.usesDefaultBeats;
   $('sectionError').hidden = true;
+}
+
+function defaultChordBeatInstruction(count) {
+  return `{chordbeats: ${Array(count).fill(DEFAULT_CHORD_BEATS).join(' ')}}`;
+}
+
+function fillMissingChordBeats(raw) {
+  const text = String(raw || '');
+  const eol = text.includes('\r\n') ? '\r\n' : '\n';
+  const insertions = [];
+  let start = null;
+  const finish = (end) => {
+    if (start === null) return;
+    const body = text.slice(start, end);
+    const section = parseChart(`Section:\n${body}`).get('Section');
+    if (section?.usesDefaultBeats) {
+      const endsWithNewline = body.endsWith('\n');
+      insertions.push({ at: end, text: `${endsWithNewline ? '' : eol}${defaultChordBeatInstruction(section.chords.length)}${endsWithNewline ? eol : ''}` });
+    }
+    start = null;
+  };
+  // Visit each source block separately, including repeated section labels.
+  // Insert at source offsets to preserve all existing text and timing exactly.
+  for (const match of text.matchAll(/[^\n]*(?:\n|$)/g)) {
+    if (!match[0]) continue;
+    const line = match[0].replace(/\r?\n$/, '');
+    if (LABEL_RE.test(line.trim())) {
+      finish(match.index);
+      start = match.index + match[0].length;
+    } else if (!line.trim()) finish(match.index);
+  }
+  finish(text.length);
+  let replacement = text;
+  for (let i = insertions.length - 1; i >= 0; i -= 1) {
+    const edit = insertions[i];
+    replacement = replacement.slice(0, edit.at) + edit.text + replacement.slice(edit.at);
+  }
+  return { text: replacement, count: insertions.length };
+}
+
+function fillSongChordBeats() {
+  if (!state.song) return;
+  const filled = fillMissingChordBeats(state.song.rawData);
+  if (!filled.count) return;
+  mutate(() => {
+    const previous = state.textEdits.get(state.songIndex) || {};
+    state.textEdits.set(state.songIndex, { ...previous, text: filled.text });
+    state.song.rawData = filled.text;
+    state.song.chart = parseChart(filled.text);
+    state.song.duplicates = duplicateLabels(filled.text);
+  });
+  showSaveStatus(`Added 4 beats per chord to ${plural(filled.count, 'section')} in this song. Existing timing was kept. Download an edited copy to save the changes.`, true);
+}
+
+function setDefaultChordBeats() {
+  const text = $('sectionText').value;
+  const section = parseChart(`Section:\n${text}`).get('Section');
+  // Only write assumed timing; never replace an existing instruction.
+  if (!editingSection || !section?.usesDefaultBeats) return;
+  $('sectionText').value = `${text.trimEnd()}\n${defaultChordBeatInstruction(section.chords.length)}`;
+  updateSectionTiming();
+  $('sectionText').focus();
 }
 
 function saveSectionText(e) {
@@ -813,6 +876,12 @@ function renderPalette() {
   build.title = !names.length ? 'No labelled sections in this chart'
     : upToDate ? 'The structure already follows the song text: nothing to build'
     : 'Number duplicate section names in the song text, then add every section in text order';
+  const missingBeats = fillMissingChordBeats(state.song.rawData).count;
+  const fill = $('fillSongBeatsBtn');
+  fill.disabled = !missingBeats;
+  fill.title = missingBeats
+    ? `Add 4 beats per chord to ${plural(missingBeats, 'section')} in this song without a chordbeats instruction. Existing timing is kept.`
+    : 'No sections in this song need default beat instructions';
 }
 
 function chipEl(ev, stepName) {
@@ -1859,6 +1928,7 @@ function bindUi() {
   $('revertBtn').addEventListener('click', revertSong);
   $('downloadBtn').addEventListener('click', downloadLibrary);
   $('buildBtn').addEventListener('click', buildStructureFromSong);
+  $('fillSongBeatsBtn').addEventListener('click', fillSongChordBeats);
   $('search').addEventListener('input', (e) => { state.query = e.target.value; renderLibrary(); });
   $('newPresetBtn').addEventListener('click', () => openPresetEditor());
   $('addMessageBtn').addEventListener('click', () => {
@@ -1870,6 +1940,7 @@ function bindUi() {
   $('presetName').addEventListener('input', () => { $('presetError').hidden = true; });
   $('sectionForm').addEventListener('submit', saveSectionText);
   $('sectionText').addEventListener('input', updateSectionTiming);
+  $('setDefaultBeatsBtn').addEventListener('click', setDefaultChordBeats);
   $('cancelSectionBtn').addEventListener('click', () => $('sectionDialog').close());
   $('fileInput').addEventListener('change', async (e) => {
     const file = e.target.files[0];

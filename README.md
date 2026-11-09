@@ -1,6 +1,8 @@
 # JustChords Structure & MIDI Editor
 
-**Version 1.2**
+**Version 1.2.1**
+
+Version 1.2.1 adds **Set beats to 4** in the section editor when timing is assumed. It inserts a `{chordbeats: 4 4 …}` instruction with one value per chord. Review it, save the section, and download an edited copy to keep the explicit timing. For the **whole current song**, use **Fill missing beats with 4** above the section palette. It fills only sections without a chordbeats instruction, including repeated section labels. Existing instructions are never replaced by either action. Use **Revert** to undo saved song edits before downloading.
 
 Version 1.2 assumes 4 beats per chord in sections without a `{chordbeats: …}` instruction, so they can be arranged and played immediately. Explicit timing, including 0 beats, is preserved. Assumed timing is shown in the timeline and section editor; it does not add directives to the song text automatically.
 
@@ -87,6 +89,8 @@ Version 1.0 has been checked in desktop Chromium, including section and MIDI pre
 Version 1.1 grouping has also been checked with real-library data and desktop Chrome, including new labels, case and spacing variants, song matching, preset renaming, and search.
 
 Version 1.2 timing has been checked for missing instructions, explicit zero and partial timing lists, timeline and section-editor updates, simulated playback scheduling, and preservation of song text in exported copies.
+
+Version 1.2.1 generation has been checked for section and whole-song actions, preservation of existing timing, repeated section labels, CRLF files, cancellation, and export of generated instructions.
 
 Physical MIDI hardware and import of exported libraries into JustChords have not been verified for this release. Try the editor with a copy, keep the original JSON, and check the exported copy in your own JustChords version before using it for a performance.
 
