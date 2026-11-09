@@ -1,6 +1,8 @@
 # JustChords Structure & MIDI Editor
 
-**Version 1.2.2**
+**Version 1.3**
+
+Version 1.3 adds **Library check** at the top of the editor. It previews and applies repairs to one song or the complete library, with separate options for numbered section headings (`Verse 1:`), missing song structures, missing 4-beat timing and whitespace cleanup. Common bracketed, quoted and comment headings are recognized; chord tags and existing MIDI events are preserved. Songs without headings get a generic `Song 1:` container rather than invented verses. Ambiguous references remain flagged for review. **Undo last fix** restores the state before the latest repair; making a later ordinary song edit clears that undo snapshot. Download an edited copy to save repairs.
 
 Version 1.2.2 keeps chords and lyrics inside their section across blank lines, including blank lines immediately after a section label. Section editing and missing-beat generation follow the same boundaries; sections end at the next label, not at a blank line.
 
@@ -76,13 +78,15 @@ Open `index.html` from the project root in Chrome or Edge, then choose your libr
 - Playback at song tempo: chord notes on MIDI channel 1, presets, optional MIDI Clock and a one- or two-bar count-in.
 - Click a section while stopped to simulate section selection. Space starts/stops playback; **Panic** sends All Notes Off.
 
+Library checks, editing and downloads work without MIDI access, including on iPad. Ordinary Chrome and Safari on iPad do not provide Web MIDI hardware access; the app now explains this separately from editing support. Desktop Chrome/Edge or a Web MIDI-capable iPad browser are alternatives for hardware output. The editor checks the MIDI API first; iPads are not unconditionally blocked just because of their device type. Connecting a MIDI interface alone does not add the missing browser API.
+
 For MIDI output, use a browser with [Web MIDI support](https://developer.mozilla.org/en-US/docs/Web/API/Web_MIDI_API), such as desktop Chrome or Edge, over HTTPS or localhost, and allow MIDI access. Editing and downloading do not require a connected MIDI device. This utility is a MIDI sequencer; it does not include a built-in synthesizer.
 
 ## GitHub Pages
 
 The app is a static site: HTML, CSS and JavaScript, with no backend, Node.js runtime or build dependencies. Open `index.html` directly or host the frontend on GitHub Pages. Both use the same import/edit/download workflow.
 
-`.github/workflows/pages.yml` publishes only `index.html`, `app.js`, `styles.css`, `demo-library.json` and `LICENSE`. Personal libraries and backups are excluded from the website artifact. The workflow deploys changes pushed to `main` and can also be run manually. It skips private repositories. In repository Settings → Pages, select **GitHub Actions** as the publishing source.
+`.github/workflows/pages.yml` publishes only `index.html`, `app.js`, `library-check.js`, `styles.css`, `demo-library.json` and `LICENSE`. Personal libraries and backups are excluded from the website artifact. The workflow deploys changes pushed to `main` and can also be run manually. It skips private repositories. In repository Settings → Pages, select **GitHub Actions** as the publishing source.
 
 ## Validation and compatibility
 

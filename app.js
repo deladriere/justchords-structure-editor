@@ -50,6 +50,7 @@ const state = {
   play: null,
   openGroups: new Set(['song']),
   query: '',
+  checkUndo: null,
 };
 
 const $ = (id) => document.getElementById(id);
@@ -364,6 +365,8 @@ function loadLibrary(library, label) {
   state.arr = null;
   // Keep an untouched snapshot of every JSON field for the downloaded copy.
   state.library = structuredClone(library);
+  state.checkUndo = null;
+  $('libraryCheckBtn').disabled = false;
   state.sourceLabel = label;
   state.presets = new Map((library.midiLibraryMessages || []).map((p) => [p.id, { ...p }]));
   state.presetEdits = new Map();
@@ -495,6 +498,7 @@ function downloadLibrary() {
 }
 
 function revertSong() {
+  state.checkUndo = null;
   state.edits.delete(state.songIndex);
   state.textEdits.delete(state.songIndex);
   state.arr = null;
@@ -810,6 +814,7 @@ function usageCounts() {
 
 function mutate(fn) {
   stopPlayback();
+  state.checkUndo = null;
   fn();
   render();
 }
@@ -1658,17 +1663,27 @@ function refreshOutputs() {
   renderTransport();
 }
 
+function midiUnavailableMessage(info = navigator) {
+  const ua = info.userAgent || '';
+  const ipad = /iPad/.test(ua) || (info.platform === 'MacIntel' && info.maxTouchPoints > 1);
+  const device = ipad ? 'iPad' : /iPhone/.test(ua) ? 'iPhone' : /iPod/.test(ua) ? 'iPod' : null;
+  return device
+    ? `MIDI output is unavailable in this browser on this ${device}. Editing, library checks and downloads still work.`
+    : 'This browser does not expose Web MIDI. Editing, library fixes and downloads still work. For hardware MIDI, use desktop Chrome or Edge over HTTPS or localhost.';
+}
+
 async function initMidi() {
   if (!navigator.requestMIDIAccess) {
     state.midi = null;
-    state.midiStatus = 'This browser has no Web MIDI (Safari). Open the page in Chrome or Edge to send MIDI; editing still works here.';
+    state.midiStatus = midiUnavailableMessage();
   } else {
     try {
       state.midi = await navigator.requestMIDIAccess({ sysex: false });
       state.midi.addEventListener('statechange', refreshOutputs);
     } catch (err) {
       state.midi = null;
-      state.midiStatus = `MIDI access was refused (${err.name}). Use Chrome or Edge and allow MIDI for this page, then reload.`;
+      state.midiStatus = err.name === 'NotSupportedError' ? midiUnavailableMessage()
+        : `MIDI access was refused (${err.name}). Editing, library fixes and downloads still work. To send MIDI, allow this site's MIDI permission and reload.`;
     }
   }
   refreshOutputs();
@@ -1901,9 +1916,112 @@ function tick() {
   p.raf = requestAnimationFrame(tick);
 }
 
+/* ---------------- library diagnostics ---------------- */
+
+function libraryCheckOptions() {
+  return Object.fromEntries(['headings', 'structure', 'beats', 'whitespace'].map(key => [key, $(`check-${key}`).checked]));
+}
+
+function librarySongPlan(index, options) {
+  const song = state.songs[index];
+  const text = state.textEdits.get(index)?.text ?? song.rawData;
+  const arr = index === state.songIndex ? state.arr : state.edits.get(index);
+  const custom = Array.isArray(song.structure) || (arr && canonical(serialize(arr)) !== baselineOf(song));
+  const structure = custom && arr ? serialize(arr) : song.structure;
+  const plan = LibraryCheck.plan(text, structure, options);
+  const missingPresets = (plan.structure || structure || []).filter(item => item.type === 'midi' && item.midiRef && !state.presets.has(item.midiRef));
+  if (missingPresets.length) plan.warnings.push(`${plural(missingPresets.length, 'MIDI event')} refer to presets absent from this library. The events are kept unchanged; restore or replace the missing presets.`);
+  return { ...plan, index };
+}
+
+function renderLibraryCheck() {
+  const options = libraryCheckOptions();
+  const plans = state.songs.map((_, i) => librarySongPlan(i, options));
+  const fixable = plans.filter(plan => plan.changed);
+  const review = plans.filter(plan => plan.warnings.length);
+  $('libraryCheckSummary').textContent = `${state.songs.length} songs checked · ${plural(fixable.length, 'song')} with proposed fixes · ${plural(review.length, 'song')} needing review`;
+  $('applyLibraryFixesBtn').disabled = !fixable.length;
+  $('applyLibraryFixesBtn').textContent = `Apply fixes to ${plural(fixable.length, 'song')}`;
+  $('undoLibraryFixesBtn').disabled = !state.checkUndo;
+  const results = $('libraryCheckResults');
+  results.innerHTML = '';
+  for (const plan of plans) {
+    if ($('checkIssuesOnly').checked && !plan.changed && !plan.warnings.length) continue;
+    const card = el('article', 'check-song');
+    card.append(el('h3', '', state.songs[plan.index].title.trim()));
+    const actions = el('p', '', plan.actions.join(' · ') || 'No automatic changes proposed');
+    card.append(actions);
+    for (const warning of plan.warnings) card.append(el('p', 'check-warning', warning));
+    if (plan.headingChanges.length) {
+      const preview = el('details', 'check-preview');
+      preview.append(el('summary', '', `Preview ${plural(plan.headingChanges.length, 'heading change')}`));
+      const list = el('ul');
+      for (const change of plan.headingChanges) list.append(el('li', '', `${change.from} → ${change.to}`));
+      preview.append(list);
+      card.append(preview);
+    }
+    const buttons = el('div', 'check-song-actions');
+    if (plan.changed) {
+      const fix = el('button', 'btn btn-small', 'Fix this song');
+      fix.addEventListener('click', () => applyLibraryFixes([plan.index]));
+      buttons.append(fix);
+    }
+    const open = el('button', 'btn btn-small', 'Open song');
+    open.addEventListener('click', () => { $('libraryCheckDialog').close(); openSong(plan.index); });
+    buttons.append(open);
+    card.append(buttons);
+    results.append(card);
+  }
+  if (!results.children.length) results.append(el('p', '', 'No issues found for the selected checks.'));
+}
+
+function applyLibraryFixes(indices) {
+  const options = libraryCheckOptions();
+  const targets = indices || state.songs.map((_, i) => i);
+  const plans = targets.map(i => librarySongPlan(i, options)).filter(plan => plan.changed);
+  if (!plans.length) return;
+  stopPlayback();
+  const snapshot = new Map(state.edits);
+  if (state.songIndex >= 0 && state.arr) snapshot.set(state.songIndex, state.arr);
+  state.checkUndo = structuredClone({ edits: snapshot, textEdits: state.textEdits });
+  const current = state.songIndex;
+  for (const plan of plans) {
+    const previous = state.textEdits.get(plan.index) || {};
+    if (plan.text === String(state.songs[plan.index].rawData || '')) state.textEdits.delete(plan.index);
+    else state.textEdits.set(plan.index, { ...previous, text: plan.text });
+    const arr = plan.structure === undefined ? defaultArrangement(parseChart(plan.text)) : parseStructure(plan.structure);
+    state.edits.set(plan.index, arr);
+  }
+  state.songIndex = -1;
+  state.arr = null;
+  openSong(current);
+  renderLibraryCheck();
+  showSaveStatus(`Applied library fixes to ${plural(plans.length, 'song')}. Download an edited copy to save them. Your original JSON is unchanged.`, true);
+}
+
+function undoLibraryFixes() {
+  if (!state.checkUndo) return;
+  stopPlayback();
+  const current = state.songIndex;
+  state.edits = state.checkUndo.edits;
+  state.textEdits = state.checkUndo.textEdits;
+  state.checkUndo = null;
+  state.songIndex = -1;
+  state.arr = null;
+  openSong(current);
+  renderLibraryCheck();
+  showSaveStatus('Undid the last library fix. Earlier edits were kept.', true);
+}
+
 /* ---------------- boot ---------------- */
 
 function bindUi() {
+  $('libraryCheckBtn').addEventListener('click', () => { renderLibraryCheck(); $('libraryCheckDialog').showModal(); });
+  $('closeLibraryCheckBtn').addEventListener('click', () => $('libraryCheckDialog').close());
+  $('applyLibraryFixesBtn').addEventListener('click', () => applyLibraryFixes());
+  $('undoLibraryFixesBtn').addEventListener('click', undoLibraryFixes);
+  for (const key of ['headings', 'structure', 'beats', 'whitespace']) $(`check-${key}`).addEventListener('change', renderLibraryCheck);
+  $('checkIssuesOnly').addEventListener('change', renderLibraryCheck);
   $('songSelect').addEventListener('change', (e) => openSong(Number(e.target.value)));
   $('zoom').addEventListener('input', (e) => { state.ppb = Number(e.target.value); stopPlayback(); render(); });
   $('playBtn').addEventListener('click', () => (state.play ? stopPlayback() : startPlayback()));

@@ -3,18 +3,18 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>JustChords Structure & MIDI Editor v1.2.2 · Independent utility</title>
-  <meta name="application-version" content="1.2.2">
+  <title>JustChords Structure & MIDI Editor v1.3 · Independent utility</title>
+  <meta name="application-version" content="1.3">
   <meta name="description" content="Independent utility for arranging JustChords song sections and MIDI events, with chords and lyrics. Imported JSON files stay on your device; download an edited copy.">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230a8fd0'/%3E%3Ctext x='8' y='24' font-size='24' fill='white'%3E♪%3C/text%3E%3C/svg%3E">
-  <link rel="stylesheet" href="styles.css?v=1.2.2">
+  <link rel="stylesheet" href="styles.css?v=1.3">
 </head>
 <body>
   <header class="topbar">
     <div class="brand">
       <span class="brand-mark">♪</span>
       <div>
-        <div class="brand-title">Structure &amp; MIDI <span class="badge badge-version" aria-label="Version 1.2.2">v1.2.2</span></div>
+        <div class="brand-title">Structure &amp; MIDI <span class="badge badge-version" aria-label="Version 1.3">v1.3</span></div>
         <div class="brand-sub">Independent utility for JustChords</div>
       </div>
     </div>
@@ -25,6 +25,7 @@
     </div>
 
     <div class="toolbar">
+      <button id="libraryCheckBtn" class="btn" disabled>Library check</button>
       <span id="dirtyBadge" class="badge badge-dirty" hidden>Modified</span>
       <button id="revertBtn" class="btn btn-ghost" hidden>Revert</button>
       <label class="zoom" title="Zoom (pixels per beat)">
@@ -157,6 +158,22 @@
     </form>
   </dialog>
 
-  <script src="app.js?v=1.2.2"></script>
+  <dialog id="libraryCheckDialog" class="preset-dialog library-check-dialog" aria-labelledby="libraryCheckTitle">
+    <div class="check-heading"><h2 id="libraryCheckTitle">Library check</h2><button id="closeLibraryCheckBtn" class="btn">Close</button></div>
+    <p>Review fixes for the complete library. Section headings use <code>Verse 1:</code>: text, one space, a number and one colon. Bracketed headings and common comment headings can be converted; chord tags are kept. Unlabelled songs receive a generic <code>Song 1:</code> heading, without guessing verses or choruses.</p>
+    <div class="check-options">
+      <label><input id="check-headings" type="checkbox" checked> Fix section headings</label>
+      <label><input id="check-structure" type="checkbox" checked> Build missing song structures / match heading references</label>
+      <label><input id="check-beats" type="checkbox" checked> Write 4 beats where timing is missing</label>
+      <label><input id="check-whitespace" type="checkbox" checked> Clean trailing spaces and excess blank lines</label>
+    </div>
+    <p>Existing MIDI events and explicit timing are preserved. Ambiguous references are reported for review. Changes stay in memory until you use <b>Download edited copy</b>.</p>
+    <p id="libraryCheckSummary" aria-live="polite"></p>
+    <div class="check-tools"><button id="applyLibraryFixesBtn" class="btn btn-primary">Apply fixes</button><button id="undoLibraryFixesBtn" class="btn" disabled>Undo last fix</button><label><input id="checkIssuesOnly" type="checkbox" checked> Only songs with issues</label></div>
+    <div id="libraryCheckResults" class="check-results"></div>
+  </dialog>
+
+  <script src="library-check.js?v=1.3"></script>
+  <script src="app.js?v=1.3"></script>
 </body>
 </html>

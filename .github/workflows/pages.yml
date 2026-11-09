@@ -27,7 +27,7 @@ jobs:
       - name: Prepare public assets only
         run: |
           mkdir _site
-          cp index.html app.js styles.css demo-library.json _site/
+          cp index.html app.js library-check.js styles.css demo-library.json _site/
           cp LICENSE _site/
           touch _site/.nojekyll
       - uses: actions/upload-pages-artifact@v4
