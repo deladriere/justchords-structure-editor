@@ -42,6 +42,7 @@ const state = {
   original: '',
   edits: new Map(),
   textEdits: new Map(),
+  structureEdits: new Set(),
   layout: [],
   selectedUid: null,
   ppb: 8,
@@ -378,6 +379,20 @@ function loadLibrary(library, label) {
   state.songs = (library.songs || []).slice().sort((a, b) => a.title.trim().localeCompare(b.title.trim()));
   state.edits = new Map();
   state.textEdits = new Map();
+  state.structureEdits = new Set();
+  const preferred = state.songs.findIndex((s) => s.structure?.some((item) => item.type === 'section'));
+  openSong(preferred >= 0 ? preferred : 0);
+}
+
+function songHasStructure(index) {
+  const raw = state.songs[index];
+  const arr = index === state.songIndex ? state.arr : state.edits.get(index);
+  const hasSections = arr ? arr.steps.some((step) => step.kind === 'section')
+    : !!raw.structure?.some((item) => item.type === 'section');
+  return hasSections && (!!raw.structure?.some((item) => item.type === 'section') || songDirty(index));
+}
+
+function renderSongSelect() {
   const select = $('songSelect');
   select.innerHTML = '';
   const withStructure = el('optgroup');
@@ -387,12 +402,10 @@ function loadLibrary(library, label) {
   state.songs.forEach((s, i) => {
     const option = el('option', '', s.title.trim() + (s.artist ? ` — ${s.artist.trim()}` : ''));
     option.value = i;
-    (s.structure ? withStructure : without).append(option);
+    (songHasStructure(i) ? withStructure : without).append(option);
   });
-  select.append(withStructure, without);
-
-  const preferred = state.songs.findIndex((s) => s.structure);
-  openSong(preferred >= 0 ? preferred : 0);
+  for (const group of [withStructure, without]) if (group.children.length) select.append(group);
+  select.value = state.songIndex;
 }
 
 function openSong(index) {
@@ -415,11 +428,12 @@ function openSong(index) {
     rawData,
     chart: parseChart(rawData),
     duplicates: duplicateLabels(rawData),
-    hasStructure: Array.isArray(raw.structure),
+    hasStructure: false,
   };
   state.original = baselineOf(raw);
   state.arr = state.edits.get(index)
     || (raw.structure ? parseStructure(raw.structure) : defaultArrangement(state.song.chart));
+  state.song.hasStructure = songHasStructure(index);
   state.selectedUid = null;
   state.displayed = false;
   state.tappedUid = null;
@@ -433,12 +447,12 @@ function baselineOf(raw) {
 
 function songDirty(index) {
   const arr = index === state.songIndex ? state.arr : state.edits.get(index);
-  if (state.textEdits.has(index)) return true;
+  if (state.textEdits.has(index) || state.structureEdits.has(index)) return true;
   return !!arr && canonical(serialize(arr)) !== baselineOf(state.songs[index]);
 }
 
 function dirtySongs() {
-  const indices = new Set([...state.edits.keys(), ...state.textEdits.keys(), state.songIndex]);
+  const indices = new Set([...state.edits.keys(), ...state.textEdits.keys(), ...state.structureEdits, state.songIndex]);
   return [...indices].filter((i) => i >= 0 && songDirty(i)).sort((a, b) => a - b);
 }
 
@@ -501,6 +515,7 @@ function revertSong() {
   state.checkUndo = null;
   state.edits.delete(state.songIndex);
   state.textEdits.delete(state.songIndex);
+  state.structureEdits.delete(state.songIndex);
   state.arr = null;
   const index = state.songIndex;
   state.songIndex = -1;
@@ -521,9 +536,11 @@ function buildStructureFromSong() {
       state.song.duplicates = [];
     }
     state.arr = { load: state.arr.load, trailing: state.arr.trailing, steps: defaultArrangement(state.song.chart).steps };
+    state.structureEdits.add(index);
     state.selectedUid = null;
     state.tappedUid = null;
   });
+  showSaveStatus('Built the song structure. Download an edited copy to save it. Your original JSON is unchanged.', true);
 }
 
 function renameSummary(renames) {
@@ -822,6 +839,8 @@ function mutate(fn) {
 /* ---------------- rendering ---------------- */
 
 function render() {
+  state.song.hasStructure = songHasStructure(state.songIndex);
+  renderSongSelect();
   computeLayout();
   renderTransport();
   renderMeta();
@@ -942,7 +961,9 @@ function renderNotice() {
   }
   const renames = state.textEdits.get(state.songIndex)?.renames;
   if (renames) notes.push(`Song text renamed: ${renameSummary(renames)}.`);
-  if (!state.song.hasStructure) notes.push('This song has no structure in the file yet. The chart sections are shown in order as a starting point.');
+  if (!state.song.hasStructure) notes.push(state.arr.steps.some((step) => step.kind === 'section')
+    ? 'This song has no saved structure yet. The chart sections are shown as a preview; use Build structure from song to keep them in your edited copy.'
+    : 'This song has no section steps in its arrangement. Use Build structure from song or add sections to the timeline.');
   if (state.arr.trailing.length) notes.push(`${plural(state.arr.trailing.length, 'MIDI row')} sit after the last section and never fire. They are kept as they are.`);
   const missing = state.arr.steps.filter((s) => s.kind === 'section' && !state.song.chart.has(s.name)).map((s) => s.name);
   if (missing.length) notes.push(`Not found in the chart: ${[...new Set(missing)].join(', ')}.`);
@@ -1983,7 +2004,7 @@ function applyLibraryFixes(indices) {
   stopPlayback();
   const snapshot = new Map(state.edits);
   if (state.songIndex >= 0 && state.arr) snapshot.set(state.songIndex, state.arr);
-  state.checkUndo = structuredClone({ edits: snapshot, textEdits: state.textEdits });
+  state.checkUndo = structuredClone({ edits: snapshot, textEdits: state.textEdits, structureEdits: state.structureEdits });
   const current = state.songIndex;
   for (const plan of plans) {
     const previous = state.textEdits.get(plan.index) || {};
@@ -1991,6 +2012,7 @@ function applyLibraryFixes(indices) {
     else state.textEdits.set(plan.index, { ...previous, text: plan.text });
     const arr = plan.structure === undefined ? defaultArrangement(parseChart(plan.text)) : parseStructure(plan.structure);
     state.edits.set(plan.index, arr);
+    if (plan.structure !== undefined) state.structureEdits.add(plan.index);
   }
   state.songIndex = -1;
   state.arr = null;
@@ -2005,6 +2027,7 @@ function undoLibraryFixes() {
   const current = state.songIndex;
   state.edits = state.checkUndo.edits;
   state.textEdits = state.checkUndo.textEdits;
+  state.structureEdits = state.checkUndo.structureEdits;
   state.checkUndo = null;
   state.songIndex = -1;
   state.arr = null;

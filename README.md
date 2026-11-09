@@ -1,6 +1,8 @@
 # JustChords Structure & MIDI Editor
 
-**Version 1.3**
+**Version 1.3.1**
+
+Version 1.3.1 updates the song picker, missing-structure notice and build button from the current working arrangement, including library repairs. Creating a structure explicitly now marks the song for export even when it matches the initial preview. Bulk undo and song revert restore the structure status as well. The Library check button now has an amber highlight to make it easy to find.
 
 Version 1.3 adds **Library check** at the top of the editor. It previews and applies repairs to one song or the complete library, with separate options for numbered section headings (`Verse 1:`), missing song structures, missing 4-beat timing and whitespace cleanup. Common bracketed, quoted and comment headings are recognized; chord tags and existing MIDI events are preserved. Songs without headings get a generic `Song 1:` container rather than invented verses. Ambiguous references remain flagged for review. **Undo last fix** restores the state before the latest repair; making a later ordinary song edit clears that undo snapshot. Download an edited copy to save repairs.
 
@@ -99,6 +101,8 @@ Version 1.2 timing has been checked for missing instructions, explicit zero and 
 Version 1.2.1 generation has been checked for section and whole-song actions, preservation of existing timing, repeated section labels, CRLF files, cancellation, and export of generated instructions.
 
 Version 1.2.2 parsing has been checked against a real song with blank lines after labels and between lyric paragraphs, including all five sections, section editing, beat generation, CRLF text, and preservation of other songs in exported copies.
+
+Version 1.3.1 structure-state regressions can be checked with `node --test tests/structure-state.test.cjs` (Node.js, no dependencies). The checks cover structure-only builds, picker/status refresh, undo/revert, MIDI preservation and export/reimport. All 79 repaired songs were also opened in desktop Chrome without a false missing-structure warning.
 
 Physical MIDI hardware and import of exported libraries into JustChords have not been verified for this release. Try the editor with a copy, keep the original JSON, and check the exported copy in your own JustChords version before using it for a performance.
 

@@ -145,6 +145,8 @@ body { display: grid; grid-template-rows: auto auto 1fr; overflow: hidden; }
   display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px;
   font-size: 12px; font-weight: 600; color: var(--ink-2); margin-bottom: 8px;
 }
+.btn-library-check { background: #fff0cb; border-color: #e5a537; color: #704200; font-weight: 700; }
+.btn-library-check:hover:not(:disabled) { background: #ffe0a0; border-color: #bd7b10; }
 .btn-small { font-size: 12px; padding: 4px 10px; }
 .palette-chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .palette-actions { display: flex; flex-wrap: wrap; gap: 6px; }
