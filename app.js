@@ -1,7 +1,7 @@
 'use strict';
 
 const SECTION_COLORS = ['#ffb020', '#34c77b', '#d67ff0', '#1c9bf0', '#4cc9f0', '#a9a9b0', '#f26b6b', '#f5c400', '#c4a484', '#8a7ff0'];
-const FAMILY_COLORS = { pico: 'var(--pico)', bass: 'var(--bass)', patch: 'var(--patch)', xr20: 'var(--xr20)', other: 'var(--other)' };
+const PRESET_COLORS = ['#ff9f0a', '#bf5af2', '#5e5ce6', '#30b0c7', '#d35c75', '#398563', '#a96b27'];
 const ZERO_BEAT_HEIGHT = 60;
 const MIN_BLOCK_HEIGHT = 60;
 const RAW_HEIGHT = 32;
@@ -241,24 +241,33 @@ function serialize(arr) {
 
 /* ---------------- presets ---------------- */
 
-function family(name) {
-  if (name.startsWith('Pico')) return 'pico';
-  if (name.startsWith('XR20')) return 'xr20';
-  if (name.startsWith('Bass')) return 'bass';
-  if (name.startsWith('Patch')) return 'patch';
-  return 'other';
+function presetLabel(name) {
+  const clean = String(name || '').replace(/\s+/g, ' ').trim();
+  // Delimited labels can contain several words (e.g. "Pico Drum").
+  // A numbered prefix such as "Patch 05 · Warm Pad" belongs to "Patch".
+  const prefix = clean.split(/[·:]/, 1)[0].trim();
+  const title = (/[·:]/.test(clean) ? prefix.replace(/\s+\d.*$/, '') : prefix.split(' ')[0]) || 'Other';
+  return { id: 'label:' + norm(title), title };
 }
 
-function picoParts(name) {
-  const m = name.match(/^Pico Drum\s*·\s*(.+?)\s*·\s*(.+)$/);
-  return m ? { song: m[1].trim(), part: m[2].trim() } : null;
+function presetColor(preset) {
+  if (!preset) return 'var(--other)';
+  const key = presetLabel(preset.name).id;
+  let hash = 0;
+  for (const char of key) hash = (hash * 31 + char.codePointAt(0)) >>> 0;
+  return PRESET_COLORS[hash % PRESET_COLORS.length];
+}
+
+function songPresetParts(name) {
+  const m = String(name || '').match(/^\s*([^·:]+?)\s*·\s*(.+?)\s*·\s*(.+?)\s*$/);
+  return m ? { label: m[1].replace(/\s+/g, ' ').trim(), song: m[2].trim(), part: m[3].trim() } : null;
 }
 
 function shortName(preset) {
   if (!preset) return 'Missing preset';
-  const pico = picoParts(preset.name);
-  if (!pico) return preset.name;
-  return norm(pico.song) === norm(state.song?.title) ? `Pico · ${pico.part}` : `Pico · ${pico.song} · ${pico.part}`;
+  const parts = songPresetParts(preset.name);
+  if (!parts) return preset.name;
+  return norm(parts.song) === norm(state.song?.title) ? `${parts.label} · ${parts.part}` : `${parts.label} · ${parts.song} · ${parts.part}`;
 }
 
 function midiChannel(message) {
@@ -814,7 +823,7 @@ function chipEl(ev, stepName) {
 
   const kind = el('span', 'kind ' + ev.trigger, { load: 'PRE', select: 'IN', deselect: 'OUT' }[ev.trigger]);
   const dot = el('span', 'dot');
-  dot.style.background = FAMILY_COLORS[preset ? family(preset.name) : 'other'];
+  dot.style.background = presetColor(preset);
   chip.append(kind, dot, el('span', '', shortName(preset)));
 
   if (ev.delay && ev.trigger !== 'load') {
@@ -1019,35 +1028,33 @@ function renderLane(lane, step, L) {
 function libraryGroups() {
   const title = norm(state.song.title);
   const chartOrder = [...state.song.chart.keys()].map(norm);
-  const groups = [
-    { id: 'song', title: `This song · ${state.song.title}`, items: [] },
-    { id: 'bass', title: 'Bass', items: [] },
-    { id: 'patch', title: 'Patch', items: [] },
-    { id: 'xr20', title: 'XR20', items: [] },
-    { id: 'other', title: 'Other', items: [] },
-    { id: 'pico', title: 'Pico Drum · other songs', items: [] },
-  ];
-  const byId = Object.fromEntries(groups.map((g) => [g.id, g]));
+  const song = { id: 'song', title: `This song · ${state.song.title}`, items: [] };
+  const labels = new Map();
 
   for (const preset of state.presets.values()) {
-    const fam = family(preset.name);
-    if (fam === 'pico') {
-      const parts = picoParts(preset.name);
-      byId[parts && norm(parts.song) === title ? 'song' : 'pico'].items.push(preset);
-    } else {
-      byId[fam].items.push(preset);
+    const label = presetLabel(preset.name);
+    const parts = songPresetParts(preset.name);
+    if (parts && norm(parts.song) === title) {
+      song.items.push(preset);
+      continue;
     }
+    if (!labels.has(label.id)) labels.set(label.id, { ...label, items: [] });
+    labels.get(label.id).items.push(preset);
   }
 
   const songRank = (preset) => {
-    const part = norm(picoParts(preset.name)?.part);
+    const part = norm(songPresetParts(preset.name)?.part);
     if (part.startsWith('song load')) return -1;
     const idx = chartOrder.findIndex((n) => part.startsWith(n + ' ') || part === n);
     return idx < 0 ? 999 : idx;
   };
-  byId.song.items.sort((a, b) => songRank(a) - songRank(b) || a.name.localeCompare(b.name, undefined, { numeric: true }));
-  for (const g of groups.slice(1)) g.items.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
-  return groups;
+  song.items.sort((a, b) => songRank(a) - songRank(b) || a.name.localeCompare(b.name, undefined, { numeric: true }));
+  const groups = [...labels.values()].sort((a, b) => norm(a.title).localeCompare(norm(b.title), undefined, { numeric: true }));
+  for (const group of groups) {
+    if (group.items.every((p) => songPresetParts(p.name))) group.title += ' · other songs';
+    group.items.sort((a, b) => norm(a.name).localeCompare(norm(b.name), undefined, { numeric: true }));
+  }
+  return [song, ...groups];
 }
 
 /* ---------------- preset editor ---------------- */
@@ -1234,7 +1241,7 @@ function renderLibrary() {
       row.draggable = true;
       row.title = `${preset.name}\nDrag onto the timeline`;
       const dot = el('span', 'dot');
-      dot.style.background = FAMILY_COLORS[family(preset.name)];
+      dot.style.background = presetColor(preset);
       const text = el('div', 'preset-text');
       text.append(
         el('div', 'preset-name', group.id === 'song' ? shortName(preset) : preset.name),
