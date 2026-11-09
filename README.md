@@ -1,6 +1,8 @@
 # JustChords Structure & MIDI Editor
 
-**Version 1.1**
+**Version 1.1.1**
+
+Version 1.1.1 versions the JavaScript and stylesheet URLs so a new page does not reuse cached assets from an older release.
 
 Version 1.1 detects MIDI Library groups from preset labels automatically, ignoring case and extra spaces.
 
