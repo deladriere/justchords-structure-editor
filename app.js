@@ -122,7 +122,8 @@ function parseChart(raw) {
   let current = null;
   for (const line of String(raw || '').split(/\r?\n/)) {
     const trimmed = line.trim();
-    if (!trimmed) { current = null; continue; }
+    // Blank lines separate paragraphs; only the next label ends a section.
+    if (!trimmed) { if (current) current.lines.push(''); continue; }
     const label = trimmed.match(LABEL_RE);
     if (label) {
       const name = label[1].trim();
@@ -537,9 +538,12 @@ function sectionTextRange(raw, name) {
   if (header < 0) return null;
   const start = lines.slice(0, header + 1).reduce((n, line) => n + line.length + 1, 0);
   let end = start;
+  let cursor = start;
   for (let i = header + 1; i < lines.length; i += 1) {
-    if (!lines[i].trim() || labelOf(lines[i])) break;
-    end += lines[i].length + 1;
+    if (labelOf(lines[i])) break;
+    cursor += lines[i].length + 1;
+    // Leave trailing separator lines outside the editable range.
+    if (lines[i].trim()) end = cursor;
   }
   return { start: Math.min(start, raw.length), end: Math.min(end, raw.length) };
 }
@@ -588,8 +592,9 @@ function fillMissingChordBeats(raw) {
     const body = text.slice(start, end);
     const section = parseChart(`Section:\n${body}`).get('Section');
     if (section?.usesDefaultBeats) {
-      const endsWithNewline = body.endsWith('\n');
-      insertions.push({ at: end, text: `${endsWithNewline ? '' : eol}${defaultChordBeatInstruction(section.chords.length)}${endsWithNewline ? eol : ''}` });
+      const lastLine = [...body.matchAll(/[^\n]*(?:\n|$)/g)].filter((line) => line[0].trim()).at(-1);
+      const endsWithNewline = lastLine[0].endsWith('\n');
+      insertions.push({ at: start + lastLine.index + lastLine[0].length, text: `${endsWithNewline ? '' : eol}${defaultChordBeatInstruction(section.chords.length)}${endsWithNewline ? eol : ''}` });
     }
     start = null;
   };
@@ -601,7 +606,7 @@ function fillMissingChordBeats(raw) {
     if (LABEL_RE.test(line.trim())) {
       finish(match.index);
       start = match.index + match[0].length;
-    } else if (!line.trim()) finish(match.index);
+    }
   }
   finish(text.length);
   let replacement = text;
@@ -648,12 +653,6 @@ function saveSectionText(e) {
   if (text === editingSection.text) { $('sectionDialog').close(); return; }
   if (text.split('\n').some((line) => labelOf(line))) {
     showError('Edit the content of this section here. Do not add another section label.');
-    return;
-  }
-  // A blank line ends a section in the chart parser. Avoid saving directives
-  // which look valid in this editor but would sit outside the named section.
-  if (text.trimEnd().split('\n').some((line) => !line.trim()) && text.trim()) {
-    showError('Keep this section’s content together: remove blank lines before its chords, lyrics or chordbeats directive.');
     return;
   }
   const values = [...text.matchAll(/\{\s*chordbeats\s*:\s*([^}]*)\}/gi)]

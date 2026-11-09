@@ -1,6 +1,8 @@
 # JustChords Structure & MIDI Editor
 
-**Version 1.2.1**
+**Version 1.2.2**
+
+Version 1.2.2 keeps chords and lyrics inside their section across blank lines, including blank lines immediately after a section label. Section editing and missing-beat generation follow the same boundaries; sections end at the next label, not at a blank line.
 
 Version 1.2.1 adds **Set beats to 4** in the section editor when timing is assumed. It inserts a `{chordbeats: 4 4 …}` instruction with one value per chord. Review it, save the section, and download an edited copy to keep the explicit timing. For the **whole current song**, use **Fill missing beats with 4** above the section palette. It fills only sections without a chordbeats instruction, including repeated section labels. Existing instructions are never replaced by either action. Use **Revert** to undo saved song edits before downloading.
 
@@ -91,6 +93,8 @@ Version 1.1 grouping has also been checked with real-library data and desktop Ch
 Version 1.2 timing has been checked for missing instructions, explicit zero and partial timing lists, timeline and section-editor updates, simulated playback scheduling, and preservation of song text in exported copies.
 
 Version 1.2.1 generation has been checked for section and whole-song actions, preservation of existing timing, repeated section labels, CRLF files, cancellation, and export of generated instructions.
+
+Version 1.2.2 parsing has been checked against a real song with blank lines after labels and between lyric paragraphs, including all five sections, section editing, beat generation, CRLF text, and preservation of other songs in exported copies.
 
 Physical MIDI hardware and import of exported libraries into JustChords have not been verified for this release. Try the editor with a copy, keep the original JSON, and check the exported copy in your own JustChords version before using it for a performance.
 
