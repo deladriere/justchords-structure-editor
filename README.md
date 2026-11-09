@@ -1,6 +1,8 @@
 # JustChords Structure & MIDI Editor
 
-**Version 1.0**
+**Version 1.1**
+
+Version 1.1 detects MIDI Library groups from preset labels automatically, ignoring case and extra spaces.
 
 > [!WARNING]
 > **Experimental utility — validate it on a copy of your library first.** Keep a backup of the original `library.json` and check every edited download before using it with JustChords. Compatibility with all JustChords versions is not guaranteed. The editor never overwrites the source JSON; it only downloads a separate edited copy. This utility is not affiliated with or endorsed by JustChords.
@@ -77,6 +79,8 @@ The app is a static site: HTML, CSS and JavaScript, with no backend, Node.js run
 ## Validation and compatibility
 
 Version 1.0 has been checked in desktop Chromium, including section and MIDI preset editing, drag-and-drop, JSON export/reimport, preservation of IDs and unknown fields, desktop/mobile dialogs, and simulated MIDI output.
+
+Version 1.1 grouping has also been checked with real-library data and desktop Chrome, including new labels, case and spacing variants, song matching, preset renaming, and search.
 
 Physical MIDI hardware and import of exported libraries into JustChords have not been verified for this release. Try the editor with a copy, keep the original JSON, and check the exported copy in your own JustChords version before using it for a performance.
 
