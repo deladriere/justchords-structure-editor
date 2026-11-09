@@ -3,18 +3,18 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>JustChords Structure & MIDI Editor v1.1.1 · Independent utility</title>
-  <meta name="application-version" content="1.1.1">
+  <title>JustChords Structure & MIDI Editor v1.2 · Independent utility</title>
+  <meta name="application-version" content="1.2">
   <meta name="description" content="Independent utility for arranging JustChords song sections and MIDI events, with chords and lyrics. Imported JSON files stay on your device; download an edited copy.">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230a8fd0'/%3E%3Ctext x='8' y='24' font-size='24' fill='white'%3E♪%3C/text%3E%3C/svg%3E">
-  <link rel="stylesheet" href="styles.css?v=1.1.1">
+  <link rel="stylesheet" href="styles.css?v=1.2">
 </head>
 <body>
   <header class="topbar">
     <div class="brand">
       <span class="brand-mark">♪</span>
       <div>
-        <div class="brand-title">Structure &amp; MIDI <span class="badge badge-version" aria-label="Version 1.1.1">v1.1.1</span></div>
+        <div class="brand-title">Structure &amp; MIDI <span class="badge badge-version" aria-label="Version 1.2">v1.2</span></div>
         <div class="brand-sub">Independent utility for JustChords</div>
       </div>
     </div>
@@ -143,7 +143,7 @@
   <dialog id="sectionDialog" class="preset-dialog section-dialog" aria-labelledby="sectionDialogTitle" aria-describedby="sectionHelp">
     <form id="sectionForm">
       <h2 id="sectionDialogTitle">Edit section</h2>
-      <p id="sectionHelp">Edit this section’s text, chords and directives. Add a line such as <code>{chordbeats: 4 4 4 4}</code> after the chords, before the blank line ending the section.</p>
+      <p id="sectionHelp">Each chord defaults to 4 beats when this section has no chordbeats instruction. To set different timing, add a line such as <code>{chordbeats: 4 4 4 4}</code> after the chords, before the blank line ending the section.</p>
       <label class="preset-name-field" for="sectionText">Section content</label>
       <textarea id="sectionText" rows="12" spellcheck="false" aria-describedby="sectionTiming sectionError"></textarea>
       <p id="sectionTiming" class="preset-help" aria-live="polite"></p>
@@ -153,6 +153,6 @@
     </form>
   </dialog>
 
-  <script src="app.js?v=1.1.1"></script>
+  <script src="app.js?v=1.2"></script>
 </body>
 </html>

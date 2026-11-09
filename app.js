@@ -11,6 +11,7 @@ const TICK_MS = 25;
 const LOOKAHEAD_MS = 100;
 const START_LEAD_MS = 80;
 const CHORD_CHANNEL = 1;
+const DEFAULT_CHORD_BEATS = 4;
 
 const settings = {
   midiOut: localStorage.getItem('jc.midiOut') || 'all',
@@ -136,11 +137,12 @@ function parseChart(raw) {
   for (const sec of sections.values()) {
     const text = sec.lines.join('\n');
     const symbols = [...text.matchAll(/\[([^\]]+)\]/g)].map((m) => m[1]);
-    const beatList = [...text.matchAll(/\{\s*chordbeats\s*:\s*([^}]*)\}/gi)]
-      .flatMap((m) => m[1].trim().split(/\s+/).filter(Boolean).map(Number));
+    const beatDirectives = [...text.matchAll(/\{\s*chordbeats\s*:\s*([^}]*)\}/gi)];
+    const beatList = beatDirectives.flatMap((m) => m[1].trim().split(/\s+/).filter(Boolean).map(Number));
+    sec.usesDefaultBeats = !beatDirectives.length && symbols.length > 0;
     let at = 0;
     sec.chords = symbols.map((symbol, i) => {
-      const beats = Number.isFinite(beatList[i]) ? beatList[i] : 0;
+      const beats = Number.isFinite(beatList[i]) ? beatList[i] : (sec.usesDefaultBeats ? DEFAULT_CHORD_BEATS : 0);
       const chord = { symbol, beats, at };
       at += beats;
       return chord;
@@ -564,7 +566,8 @@ function updateSectionTiming() {
     .flatMap((match) => match[1].trim().split(/\s+/).filter(Boolean));
   let summary = `${plural(chords, 'chord')} · ${section?.beats || 0} beats`;
   if (section?.beats && section.beats % state.song.beatsPerBar === 0) summary += ` · ${section.beats / state.song.beatsPerBar} bars`;
-  if (!values.length) summary += ' · no chord beats assigned';
+  if (section?.usesDefaultBeats) summary += ` · default: ${DEFAULT_CHORD_BEATS} beats per chord`;
+  else if (!values.length) summary += ' · no chord beats assigned';
   else if (values.length !== chords) summary += ` · ${values.length} beat values for ${chords} chords; ${values.length > chords ? 'extra values are unused' : 'remaining chords have 0 beats'}`;
   $('sectionTiming').textContent = summary;
   $('sectionError').hidden = true;
@@ -947,7 +950,7 @@ function renderTrack() {
     const foot = el('div', 'block-foot');
     if (!sec) foot.textContent = 'not in chart';
     else if (!L.beats) foot.textContent = 'no chord beats · Edit section to add timing';
-    else foot.textContent = `${L.beats} beats${L.beats % bpb === 0 ? ` · ${L.beats / bpb} bars` : ''}`;
+    else foot.textContent = `${L.beats} beats${L.beats % bpb === 0 ? ` · ${L.beats / bpb} bars` : ''}${sec.usesDefaultBeats ? ` · default: ${DEFAULT_CHORD_BEATS} per chord` : ''}`;
     block.append(foot);
 
     renderLane(lane, step, L);

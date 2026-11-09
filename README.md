@@ -1,6 +1,8 @@
 # JustChords Structure & MIDI Editor
 
-**Version 1.1.1**
+**Version 1.2**
+
+Version 1.2 assumes 4 beats per chord in sections without a `{chordbeats: …}` instruction, so they can be arranged and played immediately. Explicit timing, including 0 beats, is preserved. Assumed timing is shown in the timeline and section editor; it does not add directives to the song text automatically.
 
 Version 1.1.1 versions the JavaScript and stylesheet URLs so a new page does not reuse cached assets from an older release.
 
@@ -59,8 +61,8 @@ Open `index.html` from the project root in Chrome or Edge, then choose your libr
 
 ## Features
 
-- Vertical section blocks sized by `{chordbeats}`, with bar numbers, chords and full lyrics.
-- The **pencil button** at the top right of each section opens **Edit section** for its text, chords and directives. Paste a `{chordbeats: …}` line after its chords to add timing; the editor shows the beat total and flags mismatches between chord and beat-value counts. The edit applies to every occurrence of that named section in the arrangement and is saved in the downloaded copy. Number duplicate chart labels with **Build structure from song** before editing them.
+- Vertical section blocks sized by `{chordbeats}`, with bar numbers, chords and full lyrics. Sections without that instruction default to 4 beats per chord; explicit values override the default.
+- The **pencil button** at the top right of each section opens **Edit section** for its text, chords and directives. Paste a `{chordbeats: …}` line after its chords to override the default timing; the editor shows the beat total and flags mismatches between chord and beat-value counts. The edit applies to every occurrence of that named section in the arrangement and is saved in the downloaded copy. Number duplicate chart labels with **Build structure from song** before editing them.
 - Lyric lines aligned with their first chord; blocks expand to avoid overlapping wrapped text. Lines without chords share the preceding lyric/chord anchor rather than inventing timing.
 - Drag-and-drop MIDI presets: Song Appear, section start plus delay, or section end minus anticipation.
 - **+ New preset** in the MIDI Library creates a named preset containing one or more ordered messages. Add, remove or reorder messages, each with its own channel (1–16). Supports Program Change, Control Change, Note On/Off, Pitch Bend and pressure messages; values use MIDI's 0–127 numbering. For bank/program selection, put CC 0 and/or CC 32 before Program Change.
@@ -83,6 +85,8 @@ The app is a static site: HTML, CSS and JavaScript, with no backend, Node.js run
 Version 1.0 has been checked in desktop Chromium, including section and MIDI preset editing, drag-and-drop, JSON export/reimport, preservation of IDs and unknown fields, desktop/mobile dialogs, and simulated MIDI output.
 
 Version 1.1 grouping has also been checked with real-library data and desktop Chrome, including new labels, case and spacing variants, song matching, preset renaming, and search.
+
+Version 1.2 timing has been checked for missing instructions, explicit zero and partial timing lists, timeline and section-editor updates, simulated playback scheduling, and preservation of song text in exported copies.
 
 Physical MIDI hardware and import of exported libraries into JustChords have not been verified for this release. Try the editor with a copy, keep the original JSON, and check the exported copy in your own JustChords version before using it for a performance.
 
